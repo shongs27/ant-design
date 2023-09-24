@@ -1,16 +1,18 @@
 /* eslint-disable no-await-in-loop, no-console */
-import { spawn } from 'child_process';
-import path from 'path';
-import chalk from 'chalk';
-import fs from 'fs-extra';
-import { globSync } from 'glob';
+import { spawn } from "child_process";
+import path from "path";
+import chalk from "chalk";
+import fs from "fs-extra";
+import { globSync } from "glob";
 
 (async () => {
-  console.time('Execution...');
+  console.time("Execution...");
 
-  const demoFiles = globSync(path.join(process.cwd(), 'components/**/demo/*.md'));
+  const demoFiles = globSync(
+    path.join(process.cwd(), "components/**/demo/*.md")
+  );
 
-  const tmpFolder = path.resolve('components', '~tmp');
+  const tmpFolder = path.resolve("components", "~tmp");
   await fs.remove(tmpFolder);
   await fs.ensureDir(tmpFolder);
 
@@ -18,7 +20,7 @@ import { globSync } from 'glob';
     const lines = content.split(/[\n\r]/);
 
     const tsxStartLine = lines.findIndex((line) =>
-      line.replace(/\s/g, '').toLowerCase().includes('```tsx'),
+      line.replace(/\s/g, "").toLowerCase().includes("```tsx")
     );
 
     if (tsxStartLine < 0) {
@@ -26,18 +28,21 @@ import { globSync } from 'glob';
     }
 
     const tsxEndLine = lines.findIndex(
-      (line, index) => index > tsxStartLine && line.trim() === '```',
+      (line, index) => index > tsxStartLine && line.trim() === "```"
     );
 
-    let script = lines.slice(tsxStartLine + 1, tsxEndLine).join('\n');
+    let script = lines.slice(tsxStartLine + 1, tsxEndLine).join("\n");
 
     // insert React
-    if (!script.includes('import React') && !script.includes('import * as React')) {
+    if (
+      !script.includes("import React") &&
+      !script.includes("import * as React")
+    ) {
       script = `import React from 'react';\n${script}`;
     }
 
     // Replace mountNode
-    script = script.replace('mountNode', `document.getElementById('#root')`);
+    script = script.replace("mountNode", `document.getElementById('#root')`);
 
     // Replace antd
     script = script.replace(`from 'antd'`, `from '..'`);
@@ -51,7 +56,7 @@ import { globSync } from 'glob';
   for (let i = 0; i < demoFiles.length; i += 1) {
     const demoPath = demoFiles[i];
 
-    const content = await fs.readFile(demoPath, 'utf8');
+    const content = await fs.readFile(demoPath, "utf8");
     const script = getTypescriptDemo(content, demoPath);
 
     const dirs = path.dirname(demoPath).split(path.sep);
@@ -60,25 +65,27 @@ import { globSync } from 'glob';
     if (script) {
       const tmpFile = path.join(
         tmpFolder,
-        `${dirs[dirs.length - 2]}-${path.basename(demoPath).replace(/\..*/, '')}.tsx`,
+        `${dirs[dirs.length - 2]}-${path
+          .basename(demoPath)
+          .replace(/\..*/, "")}.tsx`
       );
-      await fs.writeFile(tmpFile, script, 'utf8');
+      await fs.writeFile(tmpFile, script, "utf8");
     }
   }
 
-  const child = spawn('npm', ['run', 'tsc']);
+  const child = spawn("npm", ["run", "tsc"]);
 
   child.stdout.pipe(process.stdout);
   child.stderr.pipe(process.stderr);
 
-  child.on('exit', async (code: number) => {
-    console.timeEnd('Execution...');
+  child.on("exit", async (code: number) => {
+    console.timeEnd("Execution...");
 
     if (code) {
-      console.log(chalk.red('💥 OPS! Seems some tsx demo not pass tsc...'));
+      console.log(chalk.red("💥 OPS! Seems some tsx demo not pass tsc..."));
     } else {
-      await fs.remove(tmpFolder);
-      console.log(chalk.green('🤪 All tsx demo passed. Congratulations!'));
+      await fs.remove();
+      console.log(chalk.green("🤪 All tsx demo passed. Congratulations!"));
     }
 
     process.exit(code);
